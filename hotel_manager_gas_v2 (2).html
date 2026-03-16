@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>現場ホテル管理</title>
+<meta name="theme-color" content="#0c0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ホテル管理">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0f1a;--surf:#141828;--card:#1c2236;--card2:#222840;--border:#2a3254;--accent:#4f8cff;--adim:rgba(79,140,255,.14);--green:#34d399;--gdim:rgba(52,211,153,.13);--yellow:#fbbf24;--ydim:rgba(251,191,36,.13);--red:#f87171;--rdim:rgba(248,113,113,.13);--muted:#5a6690;--text:#dde3f5;--text2:#8c9bbf}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;padding-bottom:calc(68px + env(safe-area-inset-bottom));overscroll-behavior:none}
+#setup{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px}
+#setup.gone{display:none}
+.setup-logo{font-size:52px;margin-bottom:14px}
+.setup-title{font-size:22px;font-weight:900;letter-spacing:-.5px;margin-bottom:4px}
+.setup-sub{font-size:12px;color:var(--muted);margin-bottom:28px;text-align:center;line-height:1.6}
+.setup-card{background:var(--surf);border:1px solid var(--border);border-radius:20px;padding:22px;width:100%;max-width:400px;margin-bottom:14px}
+.setup-card h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px;letter-spacing:.5px}
+.sf{margin-bottom:12px}
+.sf label{display:block;font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.sf input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px;font-family:inherit;transition:border-color .2s}
+.sf input:focus{outline:none;border-color:var(--accent)}
+.sf input::placeholder{color:var(--muted)}
+.btn-primary{width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .1s;touch-action:manipulation}
+.btn-primary:active{opacity:.8;transform:scale(.98)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.setup-note{font-size:11px;color:var(--muted);text-align:center;line-height:1.7;max-width:340px}
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:13px 16px 11px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+.hd-left h1{font-size:17px;font-weight:900;letter-spacing:-.3px}
+.hd-left p{font-size:11px;color:var(--muted);margin-top:1px}
+.sync-btn{background:var(--adim);border:1px solid rgba(79,140,255,.4);border-radius:8px;color:var(--accent);font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:opacity .2s;touch-action:manipulation}
+.sync-btn:active{opacity:.6}
+.spin-icon{display:inline-block}
+.spinning{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tabs{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;background:var(--surf);border-bottom:1px solid var(--border)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .2s;font-family:inherit;touch-action:manipulation}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.content{padding:14px 14px 120px}
+.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 6px;text-align:center;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc.g::before{background:var(--green)}.sc.b::before{background:var(--accent)}.sc.y::before{background:var(--yellow)}
+.sc-num{font-size:26px;font-weight:900;line-height:1}
+.sc.g .sc-num{color:var(--green)}.sc.b .sc-num{color:var(--accent)}.sc.y .sc-num{color:var(--yellow)}
+.sc-lbl{font-size:10px;color:var(--muted);margin-top:3px;font-weight:600}
+.room-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.room-bar-label{font-size:12px;color:var(--muted);font-weight:600}
+.room-bar-val{font-size:18px;font-weight:900;color:var(--yellow)}
+.sec{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:4px 0 8px;display:flex;align-items:center;gap:6px}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+.hc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 14px 12px;margin-bottom:10px;position:relative;overflow:hidden}
+.hc .bar{position:absolute;left:0;top:0;bottom:0;width:5px}
+.hc.act{background:rgba(52,211,153,.07);border-color:rgba(52,211,153,.4)}
+.hc.act .bar{background:var(--green)}
+.hc.act .hn{color:#6effd4}
+.hc.upc{background:rgba(79,140,255,.06);border-color:rgba(79,140,255,.35)}
+.hc.upc .bar{background:var(--accent)}
+.hc.upc .hn{color:#85b4ff}
+.hc.end{opacity:.55}
+.hc.end .bar{background:var(--border)}
+.ci{padding-left:10px}
+.ct{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
+.hn{font-size:14px;font-weight:700;line-height:1.3;flex:1;min-width:0;word-break:break-all}
+.card-actions{display:flex;gap:6px;flex-shrink:0;align-items:center;position:relative;z-index:50}
+.btn-edit,.btn-del{display:inline-flex;align-items:center;justify-content:center;min-width:56px;min-height:44px;padding:0 12px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;touch-action:manipulation;-webkit-appearance:none;position:relative;z-index:30;pointer-events:auto;-webkit-user-select:none;user-select:none}
+.btn-edit{background:var(--adim);color:var(--accent)}
+.btn-del{background:var(--rdim);color:var(--red)}
+.btn-edit:active,.btn-del:active{opacity:.6}
+.site-tag{font-size:11px;color:var(--muted);margin-bottom:7px}
+.badges{display:flex;flex-wrap:wrap;gap:5px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.bg{background:var(--gdim);color:var(--green)}.bb{background:var(--adim);color:var(--accent)}.by{background:var(--ydim);color:var(--yellow)}.bx{background:rgba(255,255,255,.06);color:var(--muted)}
+.aform{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+.aform h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:16px;letter-spacing:.5px}
+.fr{margin-bottom:12px}
+.fr label{display:block;font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.fr input,.fr select{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px;font-family:inherit;-webkit-appearance:none;transition:border-color .2s}
+.fr input:focus,.fr select:focus{outline:none;border-color:var(--accent)}
+.fr input::placeholder{color:var(--muted)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-cancel{width:100%;padding:14px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;touch-action:manipulation}
+.sform{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+.sform h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.sform p{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6}
+.conn-badge{background:var(--gdim);border:1px solid rgba(52,211,153,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--green);margin-bottom:14px;word-break:break-all}
+.today-hd{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.ldot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}70%{box-shadow:0 0 0 7px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+.today-lbl{font-size:13px;font-weight:700;color:var(--green)}
+.cal-wrap{margin-bottom:14px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-head h3{font-size:14px;font-weight:700}
+.cal-nav{background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:6px 14px;cursor:pointer;font-family:inherit;min-height:44px;touch-action:manipulation}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px 0}
+.cal-day{border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 2px 4px;font-size:12px;font-weight:600;cursor:pointer;background:var(--card);border:1px solid transparent;transition:all .15s;touch-action:manipulation;min-height:72px;overflow:hidden}
+.cal-day.empty{background:transparent;border-color:transparent;cursor:default}
+.cal-day.today-day{border-color:var(--accent);color:var(--accent)}
+.cal-day.active-day{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.35)}
+.cal-hotel-label{font-size:8px;font-weight:700;color:var(--green);line-height:1.2;text-align:center;width:100%;padding:0 2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-top:1px}
+.cal-popup{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px}
+.cal-popup h4{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px}
+.cal-popup-item{font-size:12px;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:3px}
+.cal-popup-item:last-child{border-bottom:none}
+.cal-popup-site{font-size:10px;color:var(--muted)}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.empty-txt{font-size:14px}
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.loader{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+#toast{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;white-space:nowrap;z-index:999;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#0c0f1a;border-top:1px solid var(--border);display:flex;padding:7px 0;padding-bottom:calc(7px + env(safe-area-inset-bottom));z-index:100}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;font-size:10px;font-weight:700;color:var(--muted);border:none;background:transparent;font-family:inherit;cursor:pointer;transition:color .2s;touch-action:manipulation;min-height:44px}
+.nb.active{color:var(--accent)}
+.nb-icon{font-size:21px;line-height:1}.add-icon{font-size:24px;font-weight:900;color:#ffffff!important}
+.fadein{animation:fi .22s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="setup">
+  <div class="setup-logo">🏨</div>
+  <div class="setup-title">現場ホテル管理</div>
+  <div class="setup-sub">初回のみGoogle Apps ScriptのURLを入力<br>以降はこの画面は出ません</div>
+  <div class="setup-card">
+    <h3>🔗 GAS URL 設定</h3>
+    <div class="sf">
+      <label>Apps Script URL</label>
+      <input id="inp-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <button class="btn-primary" onclick="saveSetup()">接続して始める</button>
+  </div>
+  <div class="setup-note">URLはApps Script → デプロイ から取得できます。</div>
+</div>
+<header>
+  <div class="hd-left">
+    <h1>🏨 現場ホテル管理</h1>
+    <p id="hd-date"></p>
+  </div>
+  <button class="sync-btn" onclick="load()"><span class="spin-icon" id="si">↻</span> 更新</button>
+</header>
+<div class="tabs" id="tabs"></div>
+<div class="content fadein" id="content"><div class="loading"><div class="loader"></div>読み込み中...</div></div>
+<div id="toast"></div>
+<nav class="bnav">
+  <button class="nb active" id="nb-list"     onclick="view('list')">    <span class="nb-icon">📋</span>一覧</button>
+  <button class="nb"        id="nb-today"    onclick="view('today')">   <span class="nb-icon">📅</span>今日</button>
+  <button class="nb"        id="nb-cal"      onclick="view('cal')">     <span class="nb-icon">🗓</span>カレンダー</button>
+  <button class="nb"        id="nb-add"      onclick="view('add')">     <span class="nb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>追加</button>
+  <button class="nb"        id="nb-history"  onclick="view('history')"> <span class="nb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg></span>履歴</button>
+  <button class="nb"        id="nb-settings" onclick="view('settings')"><span class="nb-icon">⚙️</span>設定</button>
+</nav>
+<script>
+let GAS_URL = localStorage.getItem('gas_url') || '';
+let hotels = [], curView = 'list', curSite = 'all';
+let calYear, calMonth, calSelected = null, editingId = null;
+
+function saveSetup() {
+  const u = document.getElementById('inp-url').value.trim();
+  if (!u.startsWith('https://script.google.com')) { toast('⚠️ URLを確認してください'); return; }
+  GAS_URL = u; localStorage.setItem('gas_url', u);
+  document.getElementById('setup').classList.add('gone'); init();
+}
+
+async function gasGet() {
+  const r = await fetch(GAS_URL);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return await r.json();
+}
+async function gasPost(payload) {
+  const r = await fetch(GAS_URL, { method:'POST', body:JSON.stringify(payload) });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return await r.json();
+}
+
+function today0() { const d=new Date(); d.setHours(0,0,0,0); return d; }
+function parseDate(str) {
+  const s=String(str).substring(0,10);
+  const p=s.split(/[-\/]/);
+  return new Date(Number(p[0]),Number(p[1])-1,Number(p[2]));
+}
+function status(h) {
+  const t=today0(), ci=parseDate(h.checkin), co=parseDate(h.checkout);
+  return t>=ci&&t<co?'act':t<ci?'upc':'end';
+}
+function fmt(d) { const dt=parseDate(d); return `${dt.getMonth()+1}/${dt.getDate()}`; }
+function nights(ci,co) { return Math.round((parseDate(co)-parseDate(ci))/86400000); }
+function getSites() { return [...new Set(hotels.map(h=>h.site))].sort(); }
+function filtered() { return hotels.filter(h=>curSite==='all'||h.site===curSite); }
+
+function toast(msg,ms=2400) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+async function load() {
+  const si=document.getElementById('si'); si.classList.add('spinning');
+  try {
+    const raw = await gasGet();
+    hotels = raw.map(h=>{
+      function toJST(v){
+        const s=String(v);
+        // ISO形式（T含む）はUTCなのでJSTに変換
+        if(s.includes('T')){
+          const d=new Date(s);
+          const jst=new Date(d.getTime()+9*60*60*1000);
+          return jst.toISOString().substring(0,10);
+        }
+        // スラッシュ形式 2026/03/01 → 2026-03-01
+        return s.substring(0,10).replace(/\//g,'-');
+      }
+      return {...h, checkin:toJST(h.checkin), checkout:toJST(h.checkout), rooms:Number(h.rooms)};
+    });
+    renderTabs(); renderCurrent();
+  } catch(e) { toast('⚠️ 読み込み失敗: '+e.message,3500); }
+  finally { si.classList.remove('spinning'); }
+}
+
+function renderTabs() {
+  const el=document.getElementById('tabs');
+  if(['add','settings'].includes(curView)){el.style.display='none';return;}
+  el.style.display='flex';
+  el.innerHTML=['all',...getSites()].map(s=>`<button class="tab ${curSite===s?'active':''}" onclick="filterSite('${s}')">${s==='all'?'すべて':s}</button>`).join('');
+}
+function filterSite(s){curSite=s;renderTabs();renderList();}
+
+function card(h) {
+  const s=status(h),n=nights(h.checkin,h.checkout);
+  const sb=s==='act'?'<span class="badge bg">● 滞在中</span>':s==='upc'?'':'<span class="badge bx">終了</span>';
+  return `<div class="hc ${s}"><div class="bar"></div><div class="ci">
+    <div class="ct">
+      <div class="hn">${h.hotel}</div>
+      <div class="card-actions">
+        <button type="button" class="btn-edit" onclick="event.stopPropagation();editHotel('${h.id}')">編集</button>
+        <button type="button" class="btn-del"  onclick="event.stopPropagation();del('${h.id}')">削除</button>
+      </div>
+    </div>
+    <div class="site-tag">📍 ${h.site}現場</div>
+    <div class="badges">${sb}
+      <span class="badge bb">📅 ${fmt(h.checkin)}〜${fmt(h.checkout)}</span>
+      <span class="badge by">🌙 ${n}泊</span>
+      <span class="badge bg">🚪 ${h.rooms}部屋</span>
+      ${h.note?`<span class="badge bx">📝 ${h.note}</span>`:''}
+    </div>
+  </div></div>`;
+}
+
+function renderList() {
+  const list=filtered();
+  const act=list.filter(h=>status(h)==='act').sort((a,b)=>parseDate(a.checkin)-parseDate(b.checkin));
+  const upc=list.filter(h=>status(h)==='upc').sort((a,b)=>parseDate(a.checkin)-parseDate(b.checkin));
+  const end=list.filter(h=>status(h)==='end').sort((a,b)=>parseDate(a.checkin)-parseDate(b.checkin));
+  const ar=act.reduce((s,h)=>s+h.rooms,0);
+  let html=`<div class="summary">
+    <div class="sc g" style="grid-column:span 1"><div class="sc-num">${act.length}</div><div class="sc-lbl">滞在中</div></div>
+    <div class="sc b" style="grid-column:span 1"><div class="sc-num">${upc.length}</div><div class="sc-lbl">今後の予定</div></div>
+  </div>
+  <div class="room-bar"><span class="room-bar-label">🚪 稼働中の部屋数合計</span><span class="room-bar-val">${ar} 部屋</span></div>`;
+  if(act.length) html+=`<div class="sec">🟢 滞在中</div>`+act.map(card).join('');
+  if(upc.length) html+=`<div class="sec">🔵 今後の予定</div>`+upc.map(card).join('');
+  if(!act.length&&!upc.length) html+=`<div class="empty"><div class="empty-icon">🏨</div><div class="empty-txt">現在のデータがありません</div></div>`;
+  set(html);
+}
+
+function renderToday() {
+  const t=today0();
+  const active=hotels.filter(h=>{const ci=new Date(h.checkin),co=new Date(h.checkout);return t>=ci&&t<co;});
+  const cin=hotels.filter(h=>{const ci=new Date(h.checkin);ci.setHours(0,0,0,0);return ci.getTime()===t.getTime();});
+  const cout=hotels.filter(h=>{const co=new Date(h.checkout);co.setHours(0,0,0,0);return co.getTime()===t.getTime();});
+  const now=new Date();
+  let html=`<div class="today-hd"><div class="ldot"></div><div class="today-lbl">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</div></div>`;
+  if(cin.length) html+=`<div class="sec">📥 本日チェックイン</div>`+cin.map(card).join('');
+  if(cout.length) html+=`<div class="sec">📤 本日チェックアウト</div>`+cout.map(card).join('');
+  if(active.length) html+=`<div class="sec">🏨 現在滞在中</div>`+active.map(card).join('');
+  if(!active.length&&!cin.length&&!cout.length) html+=`<div class="empty"><div class="empty-icon">😴</div><div class="empty-txt">今日の予定はありません</div></div>`;
+  set(html);
+}
+
+function renderCal() {
+  const now=new Date();
+  if(!calYear){calYear=now.getFullYear();calMonth=now.getMonth();}
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const dim=new Date(calYear,calMonth+1,0).getDate();
+  const todayN=now.getFullYear()===calYear&&now.getMonth()===calMonth?now.getDate():-1;
+  const dayMap={};
+  hotels.forEach(h=>{
+    let d=new Date(h.checkin);const end=new Date(h.checkout);
+    while(d<end){if(d.getFullYear()===calYear&&d.getMonth()===calMonth){const k=d.getDate();if(!dayMap[k])dayMap[k]=[];dayMap[k].push(h);}d.setDate(d.getDate()+1);}
+  });
+  let cells='';
+  for(let i=0;i<firstDay;i++) cells+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=dim;d++){
+    const hasH=!!dayMap[d],isT=d===todayN;
+    let labels='';
+    if(hasH){
+      labels=dayMap[d].slice(0,2).map(h=>{
+        const name=h.hotel.replace(/ホテル|アパ|プラザイン|セレクトイン|クラウンヒルズ/g,'').trim().substring(0,5);
+        return `<div class="cal-hotel-label">${name}</div>`;
+      }).join('');
+      if(dayMap[d].length>2) labels+=`<div class="cal-hotel-label">+${dayMap[d].length-2}</div>`;
+    }
+    cells+=`<div class="cal-day ${hasH?'active-day':''} ${isT?'today-day':''}" onclick="calClick(${d})">${d}${labels}</div>`;
+  }
+  let popup='';
+  if(calSelected&&dayMap[calSelected]){
+    popup=`<div class="cal-popup"><h4>📅 ${calMonth+1}月${calSelected}日の滞在　${dayMap[calSelected].length}件</h4>${dayMap[calSelected].map(h=>`<div class="cal-popup-item"><span>🏨 ${h.hotel}</span><span class="cal-popup-site">📍 ${h.site}現場　🚪 ${h.rooms}部屋　📅 ${fmt(h.checkin)}〜${fmt(h.checkout)}</span></div>`).join('')}</div>`;
+  }
+  set(`<div class="cal-wrap"><div class="cal-head">
+    <button class="cal-nav" onclick="calMove(-1)">＜</button>
+    <h3>${calYear}年${calMonth+1}月</h3>
+    <button class="cal-nav" onclick="calMove(1)">＞</button>
+  </div>
+  <div class="cal-grid">${['日','月','火','水','木','金','土'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
+  ${popup}</div>`);
+}
+function calClick(d){calSelected=calSelected===d?null:d;renderCal();}
+function calMove(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;}calSelected=null;renderCal();}
+
+function renderAdd() {
+  const sites=getSites(), isEdit=!!editingId;
+  const hotelNames=[...new Set(hotels.map(h=>h.hotel))].sort();
+  set(`<div class="aform">
+    <h3>${isEdit?'✏️ 編集':'＋ 新規登録'}</h3>
+    <div class="fr"><label>現場名</label><input id="f-site" type="text" placeholder="例：君津" list="sl"><datalist id="sl">${sites.map(s=>`<option value="${s}">`).join('')}</datalist></div>
+    <div class="fr"><label>ホテル名</label><input id="f-hotel" type="text" placeholder="例：アパホテル古河駅前" list="hl"><datalist id="hl">${hotelNames.map(h=>`<option value="${h}">`).join('')}</datalist></div>
+    <div class="f2">
+      <div class="fr"><label>チェックイン</label><input id="f-ci" type="date"></div>
+      <div class="fr"><label>チェックアウト</label><input id="f-co" type="date"></div>
+    </div>
+    <div class="fr"><label>部屋数</label><input id="f-rooms" type="number" min="1" placeholder="6"></div>
+    <div class="fr"><label>メモ（任意）</label><input id="f-note" type="text" placeholder="5名・うち3名先退出"></div>
+    <button class="btn-primary" id="btn-add" onclick="saveHotel()">${isEdit?'更新する':'スプレッドシートに保存'}</button>
+    ${isEdit?'<button class="btn-cancel" onclick="cancelEdit()">キャンセル</button>':''}
+  </div>`);
+  if(isEdit){
+    const h=hotels.find(x=>String(x.id)===String(editingId));
+    if(h){document.getElementById('f-site').value=h.site||'';document.getElementById('f-hotel').value=h.hotel||'';document.getElementById('f-ci').value=h.checkin||'';document.getElementById('f-co').value=h.checkout||'';document.getElementById('f-rooms').value=h.rooms||'';document.getElementById('f-note').value=h.note||'';}
+  }
+}
+function cancelEdit(){editingId=null;view('list');}
+
+function renderSettings(){
+  set(`<div class="sform">
+    <h3>⚙️ GAS URL 設定</h3>
+    <p>Google Apps ScriptのデプロイURLを変更できます。</p>
+    ${GAS_URL?`<div class="conn-badge">🔗 接続中: ${GAS_URL.substring(0,60)}...</div>`:''}
+    <div class="fr"><label>Apps Script URL</label><input id="s-url" type="url" value="${GAS_URL}" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <button class="btn-primary" onclick="updateSettings()">保存する</button>
+  </div>`);
+}
+function updateSettings(){
+  const u=document.getElementById('s-url').value.trim();
+  if(!u){toast('⚠️ URLを入力してください');return;}
+  GAS_URL=u;localStorage.setItem('gas_url',u);toast('✅ 保存しました');load();
+}
+
+function editHotel(id){editingId=String(id);view('add');}
+
+async function saveHotel(){
+  const site=document.getElementById('f-site').value.trim();
+  const hotel=document.getElementById('f-hotel').value.trim();
+  const ci=document.getElementById('f-ci').value;
+  const co=document.getElementById('f-co').value;
+  const rooms=parseInt(document.getElementById('f-rooms').value);
+  const note=document.getElementById('f-note').value.trim();
+  if(!site||!hotel||!ci||!co||!rooms){toast('⚠️ 必須項目を入力してください');return;}
+  const btn=document.getElementById('btn-add');
+  btn.disabled=true;btn.textContent=editingId?'更新中...':'保存中...';
+  try{
+    if(editingId){
+      const res=await gasPost({action:'update',id:editingId,site,hotel,checkin:ci,checkout:co,rooms,note});
+      // ローカルデータを直接更新
+      const idx=hotels.findIndex(x=>String(x.id)===String(editingId));
+      if(idx>=0) hotels[idx]={...hotels[idx],site,hotel,checkin:ci,checkout:co,rooms,note};
+      toast('✅ 更新しました！');editingId=null;
+    }else{
+      const res=await gasPost({action:'add',site,hotel,checkin:ci,checkout:co,rooms,note});
+      // ローカルデータに追加（GASが返したidを使用）
+      const newId=res&&res.id ? res.id : Date.now();
+      hotels.push({id:String(newId),site,hotel,checkin:ci,checkout:co,rooms,note});
+      toast('✅ スプレッドシートに保存しました！');
+    }
+    renderTabs();renderCurrent();view('list');
+  }catch(e){
+    btn.disabled=false;btn.textContent=editingId?'更新する':'スプレッドシートに保存';
+    toast('⚠️ 保存失敗: '+e.message,3500);
+  }
+}
+
+async function del(id){
+  if(!confirm('このデータを削除しますか？'))return;
+  try{
+    await gasPost({action:'delete',id});
+    // ローカルデータから直接削除
+    hotels=hotels.filter(h=>String(h.id)!==String(id));
+    toast('🗑️ 削除しました');
+    renderTabs();renderCurrent();
+  }catch(e){toast('⚠️ 削除失敗: '+e.message,3500);}
+}
+
+
+function renderHistory(){
+  const end=hotels.filter(h=>status(h)==='end').sort((a,b)=>new Date(b.checkout)-new Date(a.checkout));
+  let html='<div class="sec">📂 終了済み一覧</div>';
+  if(!end.length){
+    html+=`<div class="empty"><div class="empty-icon">📂</div><div class="empty-txt">終了済みのデータはありません</div></div>`;
+  } else {
+    html+=end.map(card).join('');
+  }
+  set(html);
+}
+
+function renderHistory(){
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear()-1);
+  const end=hotels.filter(h=>status(h)==='end' && new Date(h.checkout)>=oneYearAgo)
+    .sort((a,b)=>new Date(b.checkout)-new Date(a.checkout));
+  let html='<div class="sec">📂 終了済み（過去1年）</div>';
+  if(!end.length){
+    html+=`<div class="empty"><div class="empty-icon">📂</div><div class="empty-txt">終了済みのデータはありません</div></div>`;
+  } else {
+    html+=end.map(card).join('');
+  }
+  set(html);
+}
+function renderCurrent(){
+  if(curView==='list')renderList();
+  else if(curView==='today')renderToday();
+  else if(curView==='cal')renderCal();
+  else if(curView==='add')renderAdd();
+  else if(curView==='history')renderHistory();
+  else if(curView==='history')renderHistory();
+  else if(curView==='settings')renderSettings();
+}
+function view(v){
+  curView=v;
+  ['list','today','cal','add','history','settings'].forEach(x=>document.getElementById('nb-'+x).classList.toggle('active',x===v));
+  if(v!=='add')editingId=null;
+  renderTabs();
+  const c=document.getElementById('content');c.classList.remove('fadein');void c.offsetWidth;c.classList.add('fadein');
+  renderCurrent();
+}
+function set(html){document.getElementById('content').innerHTML=html;}
+
+function init(){
+  const now=new Date();
+  document.getElementById('hd-date').textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  load();
+}
+if(GAS_URL){document.getElementById('setup').classList.add('gone');init();}
+</script>
+</body>
+</html>
